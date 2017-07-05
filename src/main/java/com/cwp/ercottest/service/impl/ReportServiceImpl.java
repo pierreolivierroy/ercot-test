@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class ReportServiceImpl implements ReportService {
@@ -27,6 +28,7 @@ public class ReportServiceImpl implements ReportService {
     private WebParser webParser;
     private CsvUtils csvUtils;
     private String ercotUrl;
+    private Date lastInsertedDate;
 
     public ReportServiceImpl(ShortTermSystemAdequacyRepository repository,
                              ShortTermSystemAdequacyMapper mapper,
@@ -45,18 +47,26 @@ public class ReportServiceImpl implements ReportService {
 
         try {
             List<STSADocument> stsaDocuments = webParser.parseCsvRows(ercotUrl, fromDate);
-            stsaDocuments.forEach(stsaDocument -> {
+            Optional<ShortTermSystemAdequacy> lastInsertedEntity = repository.findTopByOrderByOriginalDateTimeDesc();
+
+            if (lastInsertedEntity.isPresent()) {
+                lastInsertedDate = new Date(lastInsertedEntity.get().getOriginalDateTime().getTime());
+            }
+
+            stsaDocuments.forEach((STSADocument stsaDocument) -> {
                 List<String> fileContent = csvUtils.readContentFromUrl(stsaDocument.getHref());
                 List<ShortTermSystemAdequacy> shortTermSystemAdequacies = mapper.mapList(stsaDocument.getUploadDate(), fileContent);
                 shortTermSystemAdequacies.stream()
                         .filter(Objects::nonNull)
-                        .forEach(shortTermSystemAdequacy -> {
+                        .forEach((ShortTermSystemAdequacy shortTermSystemAdequacy) -> {
                             try {
 
                                 Date dateToInsert = new Date(shortTermSystemAdequacy.getOriginalDateTime().getTime());
-                                if (dateToInsert.after(fromDate)) {
+                                if (lastInsertedDate == null || dateToInsert.after(lastInsertedDate)) {
                                     logger.info("About to save entity with id {}", shortTermSystemAdequacy.getOriginalDateTime());
+
                                     repository.save(shortTermSystemAdequacy);
+                                    lastInsertedDate = dateToInsert;
                                 } else {
                                     logger.info("Date {} already inserted", shortTermSystemAdequacy.getOriginalDateTime());
                                 }
@@ -65,6 +75,8 @@ public class ReportServiceImpl implements ReportService {
                             }
                         });
             });
+
+            logger.info("Import finished.");
 
         } catch (WebParserException e) {
             e.printStackTrace();
