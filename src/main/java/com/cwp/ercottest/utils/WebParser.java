@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +40,7 @@ public class WebParser {
         return rows.stream()
                 .map(element -> getSTSADocument(element, fromDate))
                 .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(STSADocument::getUploadDate))
                 .collect(Collectors.toList());
     }
 
@@ -67,55 +69,5 @@ public class WebParser {
         }
 
         return null;
-    }
-
-    private Date getDate(Element element, Date fromDate) {
-
-        String filename = element.select("td:contains(.zip)").html();
-
-        if (filename.length() < 1000) {
-
-            String[] split = filename.split("\\.");
-
-            if (split.length > 4 && StringUtils.isNotBlank(split[3]) && StringUtils.isNotBlank(split[4])) {
-
-                try {
-                    String date = split[3] + split[4].substring(0, 9);
-                    DateFormat dateFormat = new SimpleDateFormat("yyyyMMddkkmmssSSS");
-                    Date fileDate = dateFormat.parse(date);
-
-                    return fileDate;
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isAfterDate(Element element, Date fromDate) {
-
-        String filename = element.select("td:contains(.zip)").html();
-
-        if (filename.length() < 1000) {
-
-            String[] split = filename.split("\\.");
-
-            if (split.length > 4 && StringUtils.isNotBlank(split[3]) && StringUtils.isNotBlank(split[4])) {
-
-                try {
-                    String date = split[3] + split[4].substring(0, 9);
-                    DateFormat dateFormat = new SimpleDateFormat("yyyyMMddkkmmssSSS");
-                    Date fileDate = dateFormat.parse(date);
-
-                    return fileDate.after(fromDate);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return false;
     }
 }
