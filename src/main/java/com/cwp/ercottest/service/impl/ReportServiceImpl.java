@@ -8,6 +8,8 @@ import com.cwp.ercottest.repository.ShortTermSystemAdequacyRepository;
 import com.cwp.ercottest.service.ReportService;
 import com.cwp.ercottest.utils.CsvUtils;
 import com.cwp.ercottest.utils.WebParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ import java.util.Objects;
 
 @Service
 public class ReportServiceImpl implements ReportService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReportServiceImpl.class);
 
     private ShortTermSystemAdequacyRepository repository;
     private ShortTermSystemAdequacyMapper mapper;
@@ -46,7 +50,20 @@ public class ReportServiceImpl implements ReportService {
                 List<ShortTermSystemAdequacy> shortTermSystemAdequacies = mapper.mapList(stsaDocument.getUploadDate(), fileContent);
                 shortTermSystemAdequacies.stream()
                         .filter(Objects::nonNull)
-                        .forEach(shortTermSystemAdequacy -> repository.save(shortTermSystemAdequacy));
+                        .forEach(shortTermSystemAdequacy -> {
+                            try {
+
+                                Date dateToInsert = new Date(shortTermSystemAdequacy.getOriginalDateTime().getTime());
+                                if (dateToInsert.after(fromDate)) {
+                                    logger.info("About to save entity with id {}", shortTermSystemAdequacy.getOriginalDateTime());
+                                    repository.save(shortTermSystemAdequacy);
+                                } else {
+                                    logger.info("Date {} already inserted", shortTermSystemAdequacy.getOriginalDateTime());
+                                }
+                            } catch (RuntimeException e) {
+                                e.printStackTrace();
+                            }
+                        });
             });
 
         } catch (WebParserException e) {

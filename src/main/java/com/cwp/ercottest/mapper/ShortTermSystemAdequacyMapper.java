@@ -2,6 +2,7 @@ package com.cwp.ercottest.mapper;
 
 import com.cwp.ercottest.model.ShortTermSystemAdequacy;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.stereotype.Component;
 
@@ -22,21 +23,27 @@ public class ShortTermSystemAdequacyMapper {
 
         try {
 
-            String[] split = element.split(",");
-            ShortTermSystemAdequacy shortTermSystemAdequacy = new ShortTermSystemAdequacy();
-            Date originalDateTime = getOriginalDateTime(split[0] + split[1]);
+            if (StringUtils.isNotBlank(element)) {
+                String[] split = element.split(",");
+                ShortTermSystemAdequacy shortTermSystemAdequacy = new ShortTermSystemAdequacy();
+                Date originalDateTime = getOriginalDateTime(split[0] + split[1]);
 
-            shortTermSystemAdequacy.setOriginalDateTime(new Timestamp(originalDateTime.getTime()));
-            shortTermSystemAdequacy.setOriginalRefreshDatetime(new Timestamp(uploadDate.getTime()));
-            shortTermSystemAdequacy.setLocalDateTime(new Timestamp(DateUtils.addHours(originalDateTime, 1).getTime()));
-            shortTermSystemAdequacy.setTotalCapGenRRes(new BigDecimal(split[2]));
-            shortTermSystemAdequacy.setTotalCapLoadRes(new BigDecimal(split[3]));
-            shortTermSystemAdequacy.setOfflineAvailableMW(new BigDecimal(split[4]));
+                shortTermSystemAdequacy.setOriginalDateTime(new Timestamp(originalDateTime.getTime()));
+                shortTermSystemAdequacy.setOriginalRefreshDatetime(new Timestamp(uploadDate.getTime()));
+                shortTermSystemAdequacy.setLocalDateTime(new Timestamp(DateUtils.addHours(originalDateTime, 1).getTime()));
+                shortTermSystemAdequacy.setTotalCapGenRRes(new BigDecimal(split[2]));
+                shortTermSystemAdequacy.setTotalCapLoadRes(new BigDecimal(split[3]));
+                shortTermSystemAdequacy.setOfflineAvailableMW(new BigDecimal(split[4]));
 
-            return shortTermSystemAdequacy;
+                return shortTermSystemAdequacy;
+            }
         } catch (ParseException e) {
-            return null;
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        return null;
     }
 
     public List<ShortTermSystemAdequacy> mapList(Date uploadDate, List<String> fileContent) {
