@@ -22,7 +22,7 @@ public class ImportTask {
         this.reportService = reportService;
     }
 
-    @Scheduled(cron = "0 05 * * * *")
+    @Scheduled(cron = "0 5 * * * ?")
     public void reportCurrentTime() {
         Date currentDate = new Date();
         log.info("The time is {} about to import report", dateFormat.format(currentDate));
